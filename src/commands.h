@@ -1,0 +1,5 @@
+#define CMD_SYNC				0	// (uint8_t val)
+#define CMD_ABOUT				1	// ()
+#define CMD_READ_FLASH		2	// (uint16_t address, uint16_t size)
+#define CMD_READ_EEPROM		3	// (uint16_t address, uint16_t size)
+#define CMD_READ_FUSES		4	// ()
