@@ -13,7 +13,7 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 #include <avr/boot.h>
-
+#include <avr/signature.h>
 
 
 #include <util/delay.h>
@@ -21,6 +21,7 @@
 
 #include "uart.h"
 #include "commands.h"
+#include "version.h"
 
 
 #if defined (SPMCSR)
@@ -32,6 +33,9 @@
 #endif
 
 #define APP_END (FLASHEND - (BOOTLOADER_SIZE * 2))
+
+
+uint8_t gPageBuffer[SPM_PAGESIZE];
 
 
 static uint16_t uartWaitWord() {
@@ -116,6 +120,42 @@ static inline void eraseFlash() {
 	boot_rww_enable();
 }
 
+static inline uint16_t writeFlashPage(uint16_t waddr, uint16_t size) {
+	uint32_t pagestart = (uint32_t)waddr << 1;
+	uint32_t baddr = pagestart;
+	uint8_t *tmp = gPageBuffer;
+
+	do {
+		uint16_t data = *tmp++;
+		data |= *tmp++ << 8;
+		boot_page_fill(baddr, data);	// call asm routine.
+
+		baddr += 2;			// Select next word in memory
+		size -= 2;			// Reduce number of bytes to write by two
+	} while (size);
+
+	boot_page_write(pagestart);
+	boot_spm_busy_wait();
+	boot_rww_enable();		// Re-enable the RWW section
+
+	return baddr>>1;
+}
+
+static inline uint16_t writeEEpromPage(uint16_t address, uint16_t size) {
+	uint8_t *tmp = gPageBuffer;
+
+	do {
+		eeprom_write_byte( (uint8_t*)address, *tmp++ );
+		address++;			// Select next byte
+		size--;				// Decreas number of bytes to write
+	} while (size);				// Loop until all bytes written
+
+	// eeprom_busy_wait();
+
+	return address;
+}
+
+
 
 static void cmdSync() {
 	uint8_t val = uartWaitChar();
@@ -123,13 +163,37 @@ static void cmdSync() {
 }
 
 static void cmdAbout() {
+	// TODO use PGMEM array
 	
+	// Bootloader signature		4b
+	uartPutChar('T');
+	uartPutChar('S');
+	uartPutChar('B');
+	uartPutChar('L');
+	// Version code				2b 
+	uartPutChar(VERSION_CODE >> 8);
+	uartPutChar(VERSION_CODE & 0xff);
+	// Bootloader start			4b
+	uartPutChar(((uint32_t)BOOTLOADER_START >> 24) & 0xff);
+	uartPutChar(((uint32_t)BOOTLOADER_START >> 16) & 0xff);
+	uartPutChar(((uint32_t)BOOTLOADER_START >> 8) & 0xff);
+	uartPutChar((uint32_t)BOOTLOADER_START & 0xff);
+	// Bootloader size			2b
+	uartPutChar(BOOTLOADER_SIZE >> 8);
+	uartPutChar(BOOTLOADER_SIZE & 0xff);
+	// Page size					2b
+	uartPutChar(PAGE_SIZE >> 8);
+	uartPutChar(PAGE_SIZE & 0xff);
+	// Device signature, 3b
+	uartPutChar(SIGNATURE_2);
+	uartPutChar(SIGNATURE_1);
+	uartPutChar(SIGNATURE_0);
 }
 
 static void cmdReadFlash() {
-	uint16_t address = uartWaitWord();
+	uint16_t address_in_16b_pages = uartWaitWord();
 	uint16_t size = uartWaitWord();
-	readFlashBlock(address, size);
+	readFlashBlock(address_in_16b_pages << 4, size);
 }
 
 static void cmdReadEeprom() {
@@ -143,8 +207,69 @@ static void cmdReadFuses() {
 	
 }
 
+static void cmdEraseFlashPage() {
+	uint16_t page  = uartWaitWord();
+	uint32_t address = page*PAGE_SIZE;
+	boot_page_erase(address);
+	//boot_spm_busy_wait();		// Wait until the memory is erased.
+}
+
+volatile bool need_reenable_rww = false;
+
+static void cmdWriteFlashPage() {
+	uint16_t page  = uartWaitWord();
+	uint32_t address = page*PAGE_SIZE;
+	
+//	uint8_t sreg = SREG;
+
+	boot_spm_busy_wait();		// Wait until the memory is erased.
+	if (need_reenable_rww) {
+		boot_rww_enable();		// Re-enable the RWW section
+		need_reenable_rww = false;
+	}
+	
+	uint8_t *buf = gPageBuffer; 
+	for (uint16_t i = 0; i < PAGE_SIZE; i += 2) {
+        uint16_t w = *buf++;
+        w += (*buf++) << 8;
+    
+        boot_page_fill(address + i, w);
+    }
+	
+	boot_page_write(address);
+	need_reenable_rww = true;
+//	boot_spm_busy_wait();
+//	boot_rww_enable();		// Re-enable the RWW section
+	
+//	SREG = sreg;
+	
+	uartPutChar('0');
+}
+
+static void cmdReadPageData() {
+	for (uint16_t offset = 0; offset < PAGE_SIZE; offset++) {
+		gPageBuffer[offset] = uartWaitChar();
+	}
+}
+
+
+static void (*jump_to_app)(void) = 0x0000;
+
+static void cmdJumpToApp() {
+	if (need_reenable_rww) {
+		boot_rww_enable();		// Re-enable the RWW section
+		need_reenable_rww = false;
+	}
+	jump_to_app();	
+}
+
+
+
 void main() {
-	uartInit(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
+	//uartInit(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
+	uartInit(UART_BAUD_SELECT_DOUBLE_SPEED(UART_BAUD_RATE, F_CPU));
+	
+	cli();
 	while (true) {
 		uint8_t cmd = uartWaitChar();
 		
@@ -163,6 +288,18 @@ void main() {
 				break;
 			case CMD_READ_FUSES:
 				cmdReadFuses();
+				break;
+			case CMD_START_APP:
+				cmdJumpToApp();
+				break;
+			case CMD_ERASE_PAGE:
+				cmdEraseFlashPage();
+				break;
+			case CMD_WRITE_FLASH_PAGE:
+				cmdWriteFlashPage();
+				break;
+			case CMD_TRANSFER_PAGE:
+				cmdReadPageData();
 				break;
 		}
 	}

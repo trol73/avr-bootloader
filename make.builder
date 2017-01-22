@@ -6,7 +6,8 @@ mcu = 'atmega328'
 
 frequency = 20*1000000
 
-UART_BAUD_RATE = 57600
+#UART_BAUD_RATE = 57600
+UART_BAUD_RATE = 230400
 
 USE_SECOND_UART = 0
 
@@ -71,6 +72,7 @@ defines = [
    'UART_TX_BUFFER_SIZE=64',
    'UART_BAUD_RATE=' + str(UART_BAUD_RATE),
    'USE_SECOND_UART=' + str(USE_SECOND_UART),
+   'BOOTLOADER_START=' + str(bootstart),
    'PAGE_SIZE=' + str(dev['page_size']),
    'BOOTLOADER_SIZE=' + str(BOOTLOADER_SIZE),
    'READ_PROTECT_BOOTLOADER=' + str(READ_PROTECT_BOOTLOADER),

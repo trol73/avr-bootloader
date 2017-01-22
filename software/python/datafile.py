@@ -12,7 +12,12 @@ class DataFile:
     MODE_BINARY = 1
 
     def __init__(self, data):
-        self.data = data
+        print data
+        if type(data) is list:
+            self.data = data
+        elif type(data) is str:
+            self.data = []
+            self.load(data)
         self.mode = None
 
     def save(self, filename):
@@ -104,7 +109,7 @@ class DataFile:
                 pos += 2
                 address = strutils.hex2word(s[pos:pos+4])
                 pos += 4
-                type = strutils.hex2byte(s[pos:pos+2])
+                s_type = strutils.hex2byte(s[pos:pos+2])
                 pos += 2
 
                 # check CRC
@@ -119,7 +124,7 @@ class DataFile:
                 if crc != 0:
                     print filename, 'CRC error at line', line+1, crc % 0xff
                     sys.exit(-1)
-                if type == 0:
+                if s_type == 0:
                     if linear_mode:
                         for i in range(0, l):
                             b = strutils.hex2byte(s[pos:pos+2])
@@ -130,22 +135,23 @@ class DataFile:
                             b = strutils.hex2byte(s[pos:pos+2])
                             pos += 2
                             dt[base_address+address+i] = b
-                elif type == 1:
-                    return
-                elif type == 2:
+                elif s_type == 1:
+                    break
+                elif s_type == 2:
                     linear_mode = False
                     if address != 0:
                         print filename, 'invalid offset (not zero) at line', line+1
                     base_address + strutils.hex2word(s[pos:pos+4])
                     pos += 4
-                elif type == 3:
+                elif s_type == 3:
                     pass
                 else:
                     print filename, 'unsupported record type', line+1, crc % 0xff
                     sys.exit(-1)
+
         sz = 0
         for o in dt.keys():
-            if o > sz:
+            if o >= sz:
                 sz = o + 1
 
         self.data = sz*[None]
@@ -154,7 +160,3 @@ class DataFile:
 
 
 
-
-"""
-
-"""
