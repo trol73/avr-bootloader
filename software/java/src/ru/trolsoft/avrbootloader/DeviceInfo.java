@@ -42,4 +42,10 @@ public class DeviceInfo {
         this.pageSize = pageSize;
         this.deviceSignature = deviceSignature;
     }
+
+    @Override
+    public String toString() {
+        return "Device: signature=" + signature + " version=" + version + " bootloader_start=" + Integer.toHexString(bootloaderStart) + " bootloader_size = " +
+                Integer.toHexString(bootloaderSize) + " page_size=" + pageSize + " chip signature=" + Integer.toHexString(deviceSignature);
+    }
 }

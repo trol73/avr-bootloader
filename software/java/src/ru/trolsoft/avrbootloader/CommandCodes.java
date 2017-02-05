@@ -3,7 +3,7 @@ package ru.trolsoft.avrbootloader;
 /**
  * Created on 25/01/17.
  */
-interface Commands {
+interface CommandCodes {
     int CMD_SYNC = 0;
     int CMD_ABOUT = 1;
     int CMD_READ_FLASH = 2;

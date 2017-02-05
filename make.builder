@@ -2,16 +2,19 @@ name = 'avr-bootloader'
 
 # --------[Bootloader configuration]------------------------
 
-mcu = 'atmega328'
+#mcu = 'atmega328'
+mcu = 'atmega128'
 
-frequency = 20*1000000
+#frequency = 20*1000000
+frequency = 16*1000000
 
 #UART_BAUD_RATE = 57600
-UART_BAUD_RATE = 230400
+#UART_BAUD_RATE = 230400
+UART_BAUD_RATE = 153600
 
 USE_SECOND_UART = 0
 
-BOOTLOADER_SIZE = 0x1000
+BOOTLOADER_SIZE = 0x0800
 
 READ_PROTECT_BOOTLOADER=0
 ENABLE_READ_FUSELOCK=0
@@ -64,7 +67,7 @@ if not size_is_supported:
 	error('Wrong bootloader size: ' + str(BOOTLOADER_SIZE) + ', must be one from ' + str(dev['boot_sizes']))
 bootstart = dev['boot_start'] + dev['boot_sizes'][len(dev['boot_sizes'])-1] - BOOTLOADER_SIZE
 print 'Bootloader start:', hex(bootstart)
-print 'Bootloader size:',  hex(BOOTLOADER_SIZE)
+print 'Bootloader size:',  BOOTLOADER_SIZE, 'bytes'
 print
 	
 defines = [

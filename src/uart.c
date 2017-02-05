@@ -60,9 +60,13 @@ void uartInit(unsigned int baudrate) {
 		 // Set baud rate
 		 if (baudrate & 0x8000) {
 			  #if UART0_BIT_U2X
-			  UART0_STATUS = _BV(UART0_BIT_U2X);  //Enable 2x speed 
+			  UART0_STATUS = _BV(UART0_BIT_U2X);  // Enable 2x speed 
 			  #endif
-		 } 
+		 } else {
+			 #if UART0_BIT_U2X
+			 UART0_STATUS &= ~_BV(UART0_BIT_U2X);	// Disable 2x speed 
+			 #endif
+		 }
 		 #if defined(UART0_UBRRH)
 		 UART0_UBRRH = (unsigned char)((baudrate>>8)&0x80) ;
 		 #endif    

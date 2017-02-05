@@ -1,4 +1,4 @@
-package ru.trolsoft.ictester.device;
+package ru.trolsoft.avrbootloader;
 
 import java.io.File;
 import java.util.Comparator;
@@ -31,7 +31,7 @@ public class SerialPortList {
                 char charA = valueA.charAt(i - shiftA);
                 char charB = valueB.charAt(i - shiftB);
                 if (charA != charB) {
-                    if ((Character.isDigit(charA)) && (Character.isDigit(charB))) {
+                    if (Character.isDigit(charA) && Character.isDigit(charB)) {
                         int[] resultsA = getNumberAndLastIndex(valueA, i - shiftA);
                         int[] resultsB = getNumberAndLastIndex(valueB, i - shiftB);
 
@@ -130,13 +130,13 @@ public class SerialPortList {
         searchPath = searchPath + "/";
         String[] returnArray = new String[0];
         File dir = new File(searchPath);
-        if ((dir.exists()) && (dir.isDirectory())) {
+        if (dir.exists() && dir.isDirectory()) {
             File[] files = dir.listFiles();
-            if (files.length > 0) {
+            if (files != null && files.length > 0) {
                 TreeSet<String> portsTree = new TreeSet<>(comparator);
                 for (File file : files) {
                     String fileName = file.getName();
-                    if ((!file.isDirectory()) && (!file.isFile()) && (pattern.matcher(fileName).find())) {
+                    if (!file.isDirectory() && !file.isFile() && pattern.matcher(fileName).find()) {
                         String portName = searchPath + fileName;
 
                         if (fileName.startsWith("ttyS")) {

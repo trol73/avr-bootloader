@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from asyncore import write
+
 import serial
 import sys
 import time
@@ -186,14 +188,25 @@ class Loader:
         changes_count = 0
         # TODO detect if page is empty !!!
         for page in range(0, pages_in_data):
+            data_page_is_empty = True
+            for o in range(0, self.page_size):
+                if data[page * self.page_size + o] != 0xff:
+                    data_page_is_empty = False
+                    break
+            if data_page_is_empty:
+                continue
             for o in range(0, self.page_size):
                 if data[page * self.page_size + o] != read[page * self.page_size + o]:
                     changed_pages[page] = True
-                    print '! offset', o, 'page', page, '->', hex(page * self.page_size + o), '    ', hex(data[page * self.page_size + o]), 'vs', hex(read[page * self.page_size + o])
+                    print '! offset', o, 'page', page, '->', hex(page * self.page_size + o), '    data =', hex(data[page * self.page_size + o]), 'vs readed =', hex(read[page * self.page_size + o])
                     changes_count += 1
                     break
-        print 'changed pages', changes_count, 'from', len(changed_pages)
-        print changed_pages
+        if changes_count == 0:
+            print 'No changes'
+        else:
+            print 'changed pages', changes_count, 'from', len(changed_pages)
+
+#        print changed_pages
         return changed_pages
 
     def write_flash(self, data):
@@ -214,7 +227,8 @@ class Loader:
             self.dev.write_flash_page(page)
             write_counter += 1
         tm = time.time() - start
-        print 'write flash time', tm, 1e6*tm/write_counter/self.page_size, 'us/byte'
+        if write_counter > 0:
+            print 'write flash time', tm, 1e6*tm/write_counter/self.page_size, 'us/byte'
 
 
     def read_and_save_flash(self, filename, with_bootloader):
@@ -240,14 +254,18 @@ def print_dump(lst):
             print s
             s = ''
 
-fw = DataFile('/Users/trol/Projects/radio/avr-lcd-module-128x128/build/avr-lcd-module-128x128.hex')
+#fw = DataFile('/Users/trol/Projects/radio/avr-lcd-module-128x128/build/avr-lcd-module-128x128.hex')
+fw = DataFile('/Users/trol/Projects/radio/avr-ic-tester-v2/firmware/tester/build/ic-tester-main.hex')
 
 
 # read 230400       44.0383300884 us/byte
 #write 234000       256.21552423 us/byte
 #                   255.434597666 us/byte
 #l = Loader('/dev/tty.wchusbserial14230', 57600)
-l = Loader('/dev/tty.wchusbserial14230', 230400)
+#l = Loader('/dev/tty.wchusbserial14230', 230400)
+l = Loader('/dev/tty.wchusbserial14220', 153600)
+print l.dev.get_about()
+
 
 l.read_and_save_flash('flash_with_loader.hex', True)
 l.read_and_save_flash('flash_without_loader.hex', False)
