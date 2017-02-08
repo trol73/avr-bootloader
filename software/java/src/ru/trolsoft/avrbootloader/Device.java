@@ -14,6 +14,8 @@ import java.util.Random;
 public class Device implements AutoCloseable, CommandCodes {
 
     private static final int DEFAULT_TIMEOUT = 1000;
+
+    private static final String SIGNATURE = "TSBL";
     private final SerialPort serialPort;
 
     private boolean connected;
@@ -107,8 +109,12 @@ public class Device implements AutoCloseable, CommandCodes {
      */
     public DeviceInfo cmdAbout() throws DeviceException {
         writeByte(CMD_ABOUT);
+        String signature = readString(4);
+        if (!SIGNATURE.equals(signature)) {
+            throw new DeviceException("Bad signature: " + signature);
+        }
         return new DeviceInfo(
-                readString(4),
+                signature,
                 readWord(),
                 readDword(),
                 readWord(),
@@ -124,13 +130,13 @@ public class Device implements AutoCloseable, CommandCodes {
      * @return
      * @throws DeviceException
      */
-    public int[] cmdReadFlash(int addressIn16bytePages, int size16) throws DeviceException {
+    public byte[] cmdReadFlash(int addressIn16bytePages, int size16) throws DeviceException {
         writeByte(CMD_READ_FLASH);
         writeWord(addressIn16bytePages);
         writeWord(size16);
-        int[] result = new int[size16];
+        byte[] result = new byte[size16];
         for (int i = 0; i < size16; i++) {
-            result[i] = readByte();
+            result[i] = (byte)readByte();
         }
         return result;
     }
@@ -142,13 +148,13 @@ public class Device implements AutoCloseable, CommandCodes {
      * @return
      * @throws DeviceException
      */
-    public int[] cmdReadEeprom(int address, int size) throws DeviceException {
+    public byte[] cmdReadEeprom(int address, int size) throws DeviceException {
         writeByte(CMD_READ_EEPROM);
         writeWord(address);
         writeWord(size);
-        int[] result = new int[size];
+        byte[] result = new byte[size];
         for (int i = 0; i < size; i++) {
-            result[i] = readByte();
+            result[i] = (byte)readByte();
         }
         return result;
     }
@@ -189,7 +195,7 @@ public class Device implements AutoCloseable, CommandCodes {
      * @param data
      * @throws DeviceException
      */
-    public void cmdTransferPage(int[] data) throws DeviceException {
+    public void cmdTransferPage(byte[] data) throws DeviceException {
         writeByte(CMD_TRANSFER_PAGE);
         writeBytes(data);
     }
@@ -209,6 +215,12 @@ System.out.println("-> " + singleByte);
     }
 
     private void writeBytes(int... vals) throws DeviceException {
+        for (int v : vals) {
+            writeByte(v);
+        }
+    }
+
+    private void writeBytes(byte... vals) throws DeviceException {
         for (int v : vals) {
             writeByte(v);
         }

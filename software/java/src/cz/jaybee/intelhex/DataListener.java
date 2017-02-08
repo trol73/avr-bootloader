@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Jan Breuer All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,10 +41,10 @@ public interface DataListener {
      * @param address
      * @param data
      */
-    public void data(long address, byte[] data);
+    void data(long address, byte[] data);
 
     /**
      * After eof is detected in the file, this listener method is called
      */
-    public void eof();
+    void eof();
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015, Jan Breuer All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,23 +48,27 @@ public class BinWriter implements DataListener {
     private long maxAddress;
     private final boolean minimize;
 
-    public BinWriter(Region outputRegion, OutputStream destination, boolean minimize) {
+    public BinWriter(Region outputRegion, OutputStream destination, boolean minimize, int fillWith) {
         this.outputRegion = outputRegion;
         this.destination = destination;
         this.minimize = minimize;
         this.buffer = new byte[(int) (outputRegion.getLength())];
-        Arrays.fill(buffer, (byte) 0xFF);
+        Arrays.fill(buffer, (byte) fillWith);
         regions = new MemoryRegions();
         maxAddress = outputRegion.getAddressStart();
+    }
+
+    public BinWriter(Region outputRegion, OutputStream destination, boolean minimize) {
+        this(outputRegion, destination, minimize, 0xff);
     }
 
     @Override
     public void data(long address, byte[] data) {
         regions.add(address, data.length);
 
-        if ((address >= outputRegion.getAddressStart()) && (address <= outputRegion.getAddressEnd())) {
+        if (address >= outputRegion.getAddressStart() && address <= outputRegion.getAddressEnd()) {
             int length = data.length;
-            if ((address + length) > outputRegion.getAddressEnd()) {
+            if (address + length > outputRegion.getAddressEnd()) {
                 length = (int) (outputRegion.getAddressEnd() - address + 1);
             }
             System.arraycopy(data, 0, buffer, (int) (address - outputRegion.getAddressStart()), length);
