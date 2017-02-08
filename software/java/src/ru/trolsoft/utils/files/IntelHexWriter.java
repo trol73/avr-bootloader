@@ -52,7 +52,7 @@ public class IntelHexWriter {
                 addSegmentRecord(nextSegment);
                 segmentAddress = nextSegment;
             }
-            addDataRecord(offset, buf);
+            addDataRecord(offset & 0xffff, buf);
             bytesToAdd -= buf.length;
             offset += buf.length;
             pos += buf.length;
@@ -68,6 +68,8 @@ public class IntelHexWriter {
         String rec = ":02000002" + hex(hi) + hex(lo) + hex(crc);
         write(rec);
         // 02 0000 02 10 00 EC
+        //:02 0000 04 00 01 F9
+
     }
 
 
@@ -78,7 +80,7 @@ public class IntelHexWriter {
 
     private void write(String s) throws IOException {
         writer.write(s);
-        writer.write(0x0d);
+        //writer.write(0x0d);
         writer.write(0x0a);
     }
 

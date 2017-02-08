@@ -201,7 +201,7 @@ public class Device implements AutoCloseable, CommandCodes {
     }
 
     private void writeByte(int singleByte) throws DeviceException {
-System.out.println("-> " + singleByte);
+//System.out.println("-> " + singleByte);
         try {
             serialPort.writeInt(singleByte);
         } catch (SerialPortException e) {

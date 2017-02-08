@@ -11,7 +11,7 @@ import java.util.Arrays;
  */
 public class Bootloader {
 
-    private static final int BYTES_PER_LINE_IN_HEX = 16;
+    private static final int BYTES_PER_LINE_IN_HEX = 32;
 
     private final Device device;
     private DeviceInfo deviceInfo;
@@ -47,12 +47,18 @@ public class Bootloader {
         byte[] result = new byte[size];
 
         int pos = 0;
+System.out.println(Integer.toHexString(size));
         while (size > 0) {
             int readSize = size <= 0xffff ? size : 0xffff;
+//readSize = size <= 0x100 ? size : 0x100;
+// :02 0000 04 0001F9
+// :02 0000 02 1002EA
+System.out.println(Integer.toHexString(offset >> 4) + "\t\t" + Integer.toHexString(offset) + "\t\t\t" + Integer.toHexString(readSize)+ "\t\t\t" + Integer.toHexString(size));
             byte[] read = device.cmdReadFlash(offset >> 4, readSize);
             System.arraycopy(read, 0, result, pos, readSize);
             pos += readSize;
             size -= readSize;
+            offset += readSize;
         }
         return result;
     }
@@ -164,12 +170,11 @@ public class Bootloader {
     }
 
 
-    public static void main(String[] args) throws DeviceException {
+    public static void main(String[] args) throws DeviceException, IOException {
         Device dev = new Device("/dev/tty.wchusbserial14220");
         dev.open(153600);
-        System.out.println(dev.cmdSync(1));
-        System.out.println(dev.cmdSync(2));
-        System.out.println(dev.cmdSync(3));
-        System.out.println(dev.cmdAbout());
+        Bootloader bootloader = new Bootloader(dev);
+//        bootloader.readFlashToFile(false, "/Users/trol/Projects/radio/avr-bootloader/read_firmware.hex");
+        bootloader.readFlashToFile(true, "/Users/trol/Projects/radio/avr-bootloader/read_firmware_with_loader.hex");
     }
 }
