@@ -47,13 +47,8 @@ public class Bootloader {
         byte[] result = new byte[size];
 
         int pos = 0;
-System.out.println(Integer.toHexString(size));
         while (size > 0) {
-            int readSize = size <= 0xffff ? size : 0xffff;
-//readSize = size <= 0x100 ? size : 0x100;
-// :02 0000 04 0001F9
-// :02 0000 02 1002EA
-System.out.println(Integer.toHexString(offset >> 4) + "\t\t" + Integer.toHexString(offset) + "\t\t\t" + Integer.toHexString(readSize)+ "\t\t\t" + Integer.toHexString(size));
+            int readSize = size <= 0xfff0 ? size : 0xfff0;
             byte[] read = device.cmdReadFlash(offset >> 4, readSize);
             System.arraycopy(read, 0, result, pos, readSize);
             pos += readSize;

@@ -44,26 +44,40 @@ static uint16_t uartWaitWord() {
 }	
 
 
-static inline uint16_t readFlashBlock(uint16_t address, uint16_t size) {
+static inline uint16_t readFlashBlock(uint32_t address, uint16_t size) {
 	do {
-		uint16_t data;
+		//uint16_t data;
+		uint8_t data;
 #if READ_PROTECT_BOOTLOADER
 		// don't read bootloader
 		if (address < APP_END) {
+//		#if defined(RAMPZ)
+//			data = pgm_read_word_far(address);
+//		#else
+//			data = pgm_read_word_near(address);
+//		#endif
 		#if defined(RAMPZ)
-			data = pgm_read_word_far(address);
+			data = pgm_read_byte_far(address);
 		#else
-			data = pgm_read_word_near(address);
+			data = pgm_read_byte_near(address);
 		#endif
+			
 		} else {
-			data = 0xFFFF; // fake empty
+			//data = 0xFFFF; // fake empty
+			data = 0xFF; // fake empty
 		}
 #else
+//	#if defined(RAMPZ)
+//		data = pgm_read_word_far(address);
+//	#else
+//		data = pgm_read_word_near(address);
+//	#endif
 	#if defined(RAMPZ)
-		data = pgm_read_word_far(address);
+		data = pgm_read_byte_far(address);
 	#else
-		data = pgm_read_word_near(address);
+		data = pgm_read_byte_near(address);
 	#endif
+		
 #endif
 		uartPutChar(data);			// send LSB
 		size--;
@@ -71,9 +85,9 @@ static inline uint16_t readFlashBlock(uint16_t address, uint16_t size) {
 		if (!size) {
 			break;
 		}
-		uartPutChar(data >> 8);		// send MSB
-		address++;
-		size--;
+//		uartPutChar(data >> 8);		// send MSB
+//		address++;
+//		size--;
 	} while (size);
 	return address;
 }
@@ -191,9 +205,10 @@ static void cmdAbout() {
 }
 
 static void cmdReadFlash() {
-	uint16_t address_in_16b_pages = uartWaitWord();
+	uint32_t address = uartWaitWord();	// addres in 16 bytes paragraphs
 	uint16_t size = uartWaitWord();
-	readFlashBlock(address_in_16b_pages << 4, size);
+	address <<= 4;
+	readFlashBlock(address, size);
 }
 
 static void cmdReadEeprom() {
