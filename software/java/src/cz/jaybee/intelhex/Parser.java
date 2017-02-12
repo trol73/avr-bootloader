@@ -41,8 +41,8 @@ public class Parser {
     private static final int HEX = 16;
     private boolean eof = false;
     private int recordIdx = 0;
-    private long upperAddress = 0;
-    private long startAddress = 0;
+    private int upperAddress = 0;
+    private int startAddress = 0;
 
     /**
      * Constructor of the parser with reader
@@ -74,11 +74,14 @@ public class Parser {
     /**
      * Parse one line of Intel HEX file
      *
-     * @param string record
+     * @param record record
      * @return parsed record
      * @throws IntelHexException
      */
     private Record parseRecord(String record) throws IntelHexException {
+        if (record.trim().isEmpty()) {
+            return null;
+        }
         Record result = new Record();
         // check, if there wasn an accidential EOF record
         if (eof) {
@@ -135,7 +138,7 @@ public class Parser {
      */
     private void processRecord(Record record) throws IntelHexException {
         // build full address
-        long addr = record.address | upperAddress;
+        int addr = record.address | upperAddress;
         switch (record.type) {
             case DATA:
                 if (dataListener != null) {
@@ -218,7 +221,9 @@ public class Parser {
 
         while ((recordStr = reader.readLine()) != null) {
             Record record = parseRecord(recordStr);
-            processRecord(record);
+            if (record != null) {
+                processRecord(record);
+            }
             recordIdx++;
         }
 

@@ -32,10 +32,10 @@ package cz.jaybee.intelhex;
  */
 public class Region implements Comparable<Region> {
 
-    private long addressStart;
-    private long addressEnd;
+    private int addressStart;
+    private int addressEnd;
 
-    public Region(long start, long length) {
+    public Region(int start, int length) {
         this.addressStart = start;
         this.addressEnd = start + length - 1;
     }
@@ -44,7 +44,7 @@ public class Region implements Comparable<Region> {
      * Get length of the region
      * @return length of the region
      */
-    public long getLength() {
+    public int getLength() {
         return addressEnd - addressStart + 1;
     }
     
@@ -52,7 +52,7 @@ public class Region implements Comparable<Region> {
      * Return last address in memory region
      * @return last address in memory region
      */
-    public long getAddressEnd() {
+    public int getAddressEnd() {
         return addressEnd;
     }
 
@@ -60,7 +60,7 @@ public class Region implements Comparable<Region> {
      * Set end address
      * @param addressEnd 
      */
-    public void setAddressEnd(long addressEnd) {
+    public void setAddressEnd(int addressEnd) {
         this.addressEnd = addressEnd;
     }
     
@@ -68,7 +68,7 @@ public class Region implements Comparable<Region> {
      * Get start address of the region
      * @return start address of memory region
      */    
-    public long getAddressStart() {
+    public int getAddressStart() {
         return addressStart;
     }
     
@@ -76,7 +76,7 @@ public class Region implements Comparable<Region> {
      * Set start address
      * @param addressStart 
      */
-    public void setAddressStart(long addressStart) {
+    public void setAddressStart(int addressStart) {
         this.addressStart = addressStart;
     }
 
@@ -84,13 +84,13 @@ public class Region implements Comparable<Region> {
      * Increment length of the region by value
      * @param value 
      */
-    void incLength(long value) {
+    void incLength(int value) {
         addressEnd += value;
     }
 
     @Override
     public String toString() {
-        return String.format("0x%08x:0x%08x (%dB 0x%08X)", addressStart, addressEnd, getLength(), getLength());
+        return String.format("0x%08x:0x%08x (%d bytes 0x%08X)", addressStart, addressEnd, getLength(), getLength());
     }
 
     /**
@@ -103,9 +103,9 @@ public class Region implements Comparable<Region> {
     @Override
     public int compareTo(Region o) {
         if (this.addressStart == o.addressStart) {
-            return Long.compare(this.addressEnd, o.addressEnd);
+            return Integer.compare(this.addressEnd, o.addressEnd);
         } else {
-            return Long.compare(this.addressStart, o.addressStart);
+            return Integer.compare(this.addressStart, o.addressStart);
         }
     }
 }

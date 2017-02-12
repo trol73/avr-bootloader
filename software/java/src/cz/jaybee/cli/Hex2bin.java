@@ -124,10 +124,10 @@ public class Hex2bin {
 
             // if address parameter is "max", calculate maximum memory region
             if (!("min".equals(dataFrom))) {
-                outputRegion.setAddressStart(Long.parseLong(dataFrom.substring(2), 16));
+                outputRegion.setAddressStart(Integer.parseInt(dataFrom.substring(2), 16));
             }
             if (!("max".equals(dataTo))) {
-                outputRegion.setAddressEnd(Long.parseLong(dataTo.substring(2), 16));
+                outputRegion.setAddressEnd(Integer.parseInt(dataTo.substring(2), 16));
             }
 
             // 2nd iteration - actual write of the output

@@ -18,6 +18,8 @@ public class Device implements AutoCloseable, CommandCodes {
     private static final String SIGNATURE = "TSBL";
     private final SerialPort serialPort;
 
+
+    private Statistic statistic;
     private boolean connected;
 
     /**
@@ -40,7 +42,7 @@ public class Device implements AutoCloseable, CommandCodes {
     /**
      *
      * @param baudRate
-     * @throws DeviceException
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public boolean open(int baudRate) throws DeviceException {
         try {
@@ -79,7 +81,7 @@ public class Device implements AutoCloseable, CommandCodes {
 
     /**
      *
-     * @throws DeviceException
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public void close() throws DeviceException {
         try {
@@ -92,9 +94,9 @@ public class Device implements AutoCloseable, CommandCodes {
 
     /**
      *
-     * @param val
-     * @return
-     * @throws DeviceException
+     * @param val value to send
+     * @return received value
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public int cmdSync(int val) throws DeviceException {
         writeBytes(CMD_SYNC, val);
@@ -104,8 +106,8 @@ public class Device implements AutoCloseable, CommandCodes {
 
     /**
      *
-     * @return
-     * @throws DeviceException
+     * @return {@link DeviceInfo} information about microcontroller and bootloader
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public DeviceInfo cmdAbout() throws DeviceException {
         writeByte(CMD_ABOUT);
@@ -124,11 +126,12 @@ public class Device implements AutoCloseable, CommandCodes {
     }
 
     /**
+     * Read flash block
      *
-     * @param addressIn16bytePages
-     * @param size16
-     * @return
-     * @throws DeviceException
+     * @param addressIn16bytePages address in 16 byte block (i.e. byte address / 16)
+     * @param size16 number of bytes to read (0..FFFF)
+     * @return byte array with read data
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public byte[] cmdReadFlash(int addressIn16bytePages, int size16) throws DeviceException {
         writeByte(CMD_READ_FLASH);
@@ -143,10 +146,10 @@ public class Device implements AutoCloseable, CommandCodes {
 
     /**
      *
-     * @param address
-     * @param size
-     * @return
-     * @throws DeviceException
+     * @param address address (in bytes)
+     * @param size number of bytes to read
+     * @return byte array with read data
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public byte[] cmdReadEeprom(int address, int size) throws DeviceException {
         writeByte(CMD_READ_EEPROM);
@@ -159,9 +162,25 @@ public class Device implements AutoCloseable, CommandCodes {
         return result;
     }
 
+
     /**
+     * Read fuse bytes
      *
-     * @throws DeviceException
+     * @return fuses
+     * @throws DeviceException if any serial i/o or device error caused
+     */
+    public Fuses cmdReadFuses() throws DeviceException {
+        writeByte(CMD_READ_FUSES);
+        int lo = readByte();
+        int ex = readByte();
+        int hi = readByte();
+        return new Fuses(lo, ex, hi);
+    }
+
+    /**
+     * Exit from bootloader and run main firmware
+     *
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public void cmdStartApp() throws DeviceException {
         writeByte(CMD_START_APP);
@@ -169,44 +188,59 @@ public class Device implements AutoCloseable, CommandCodes {
 
 
     /**
+     * Erase flash page (and prepare it for writing)
      *
-     * @param pageNumber
-     * @throws DeviceException
+     * @param pageNumber number of page
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public void cmdErasePage(int pageNumber) throws DeviceException {
         writeByte(CMD_ERASE_PAGE);
         writeWord(pageNumber);
+        if (statistic != null) {
+            statistic.avrFlashPagesEraseCount++;
+        }
     }
 
     /**
+     * Write page to flash. Page must be preloaded with {@link #cmdTransferPage(byte[])} and erased with {@link #cmdErasePage(int)}.
      *
-     * @param pageNumber
-     * @return
-     * @throws DeviceException
+     * @param pageNumber page number (0..FFFF)
+     * @return true
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public boolean cmdWriteFlashPage(int pageNumber) throws DeviceException {
         writeByte(CMD_WRITE_FLASH_PAGE);
         writeWord(pageNumber);
+        if (statistic != null) {
+            statistic.avrFlashPagesWriteCount++;
+        }
         return readByte() == 0;
     }
 
     /**
-     *
-     * @param data
-     * @throws DeviceException
+     * Transfer flash page to the microcontroller memory
+     * @param data page data
+     * @throws DeviceException if any serial i/o or device error caused
      */
     public void cmdTransferPage(byte[] data) throws DeviceException {
         writeByte(CMD_TRANSFER_PAGE);
         writeBytes(data);
     }
 
-    private void writeByte(int singleByte) throws DeviceException {
-//System.out.println("-> " + singleByte);
-        try {
-            serialPort.writeInt(singleByte);
-        } catch (SerialPortException e) {
-            throw new DeviceException(e);
-        }
+    /**
+     * Set object to collect statistic
+     * @return object to collect statistic
+     */
+    public Statistic getStatistic() {
+        return statistic;
+    }
+
+    /**
+     * Set object to collect statistic
+     * @param statistic object to collect statistic
+     */
+    public void setStatistic(Statistic statistic) {
+        this.statistic = statistic;
     }
 
     private void writeWord(int word) throws DeviceException {
@@ -256,12 +290,37 @@ public class Device implements AutoCloseable, CommandCodes {
 
 
     private int readByte(int timeout) throws SerialPortException {
+        long t = System.currentTimeMillis();
         try {
             int[] buf = serialPort.readIntArray(1, timeout);
+            t = System.currentTimeMillis() - t;
+            if (statistic != null) {
+                statistic.uartReceiveCount++;
+                statistic.uartReceiveTime += t;
+            }
             return buf[0];
         } catch (SerialPortTimeoutException e) {
+            t = System.currentTimeMillis() - t;
+            if (statistic != null) {
+                statistic.uartReadTimeoutsCount++;
+                statistic.uartReadWithTimeoutTime += t;
+            }
             throw new SerialPortException(serialPort.getPortName(), "readByte", "timeout");
         }
     }
+
+    private void writeByte(int singleByte) throws DeviceException {
+        try {
+            long t = System.currentTimeMillis();
+            serialPort.writeInt(singleByte);
+            if (statistic != null) {
+                statistic.uartSendCount++;
+                statistic.uartSendTime += t;
+            }
+        } catch (SerialPortException e) {
+            throw new DeviceException(e);
+        }
+    }
+
 
 }

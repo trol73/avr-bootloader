@@ -40,7 +40,7 @@ public class RangeDetector implements DataListener {
     private final MemoryRegions regions = new MemoryRegions();
 
     @Override
-    public void data(long address, byte[] data) {
+    public void data(int address, byte[] data) {
         regions.add(address, data.length);
     }
 

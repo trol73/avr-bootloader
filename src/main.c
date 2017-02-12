@@ -219,7 +219,13 @@ static void cmdReadEeprom() {
 }
 
 static void cmdReadFuses() {
+	uint8_t lo = boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS);
+	uint8_t ex = boot_lock_fuse_bits_get(GET_EXTENDED_FUSE_BITS);
+	uint8_t hi = boot_lock_fuse_bits_get(GET_HIGH_FUSE_BITS);
 	
+	uartPutChar(lo);
+	uartPutChar(ex);
+	uartPutChar(hi);
 }
 
 static void cmdEraseFlashPage() {

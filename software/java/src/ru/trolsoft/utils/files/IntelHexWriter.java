@@ -23,9 +23,9 @@ public class IntelHexWriter {
         }
     }
 
-    public IntelHexWriter(String fileName) throws IOException {
-        this(new FileWriter(fileName));
-    }
+//    public IntelHexWriter(String fileName) throws IOException {
+//        this(new FileWriter(fileName));
+//    }
 
 
 

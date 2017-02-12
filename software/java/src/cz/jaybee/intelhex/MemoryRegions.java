@@ -40,7 +40,7 @@ public class MemoryRegions {
 
     private final List<Region> regions = new ArrayList<>();
 
-    public void add(long start, long length) {
+    public void add(int start, int length) {
         Region prevRegion;
         if (regions.size() > 0) {
             prevRegion = regions.get(regions.size() - 1);
@@ -87,8 +87,8 @@ public class MemoryRegions {
     }
     
     public Region getFullRangeRegion() {
-        long start = 0;
-        long length = 0;
+        int start = 0;
+        int length = 0;
         if (!regions.isEmpty()) {
             start = regions.get(0).getAddressStart();
             Region last = regions.get(regions.size() - 1);

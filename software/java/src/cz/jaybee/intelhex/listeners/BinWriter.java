@@ -63,7 +63,7 @@ public class BinWriter implements DataListener {
     }
 
     @Override
-    public void data(long address, byte[] data) {
+    public void data(int address, byte[] data) {
         regions.add(address, data.length);
 
         if (address >= outputRegion.getAddressStart() && address <= outputRegion.getAddressEnd()) {
