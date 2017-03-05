@@ -161,7 +161,7 @@ static inline uint16_t writeEEpromPage(uint16_t address, uint16_t size) {
 	do {
 		eeprom_write_byte( (uint8_t*)address, *tmp++ );
 		address++;			// Select next byte
-		size--;				// Decreas number of bytes to write
+		size--;				// Decrease number of bytes to write
 	} while (size);				// Loop until all bytes written
 
 	// eeprom_busy_wait();
@@ -229,7 +229,7 @@ static void cmdReadFuses() {
 }
 
 static void cmdEraseFlashPage() {
-	uint16_t page  = uartWaitWord();
+	uint16_t page = uartWaitWord();
 	uint32_t address = page*PAGE_SIZE;
 	boot_page_erase(address);
 	//boot_spm_busy_wait();		// Wait until the memory is erased.
@@ -328,13 +328,22 @@ void main() {
 
 
 void reset(void) __attribute__((naked,section(".vectors")));
-void reset(void){
+void reset(void) {
     asm("clr r1");
     SP = RAMEND;
     SREG = 0;
-    asm("jmp __dtors_end");
+#if __AVR_ARCH__ == 4
+	 asm("rjmp __dtors_end");
+#else 
+	 asm("jmp __dtors_end");
+#endif	 
+    
 }
 void jmp_main(void) __attribute__((naked,section(".init9")));
-void jmp_main(void){
+void jmp_main(void) {
+#if __AVR_ARCH__ == 4
+	asm("rjmp main");
+#else	
     asm("jmp main");
+#endif	 
 }
