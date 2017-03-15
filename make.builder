@@ -28,6 +28,11 @@ ENABLE_READ_FUSELOCK=0
 # ---------[Devices] ---------------------------------------
 
 devices = {
+	'atmega8': {
+		'page_size': 0x40,
+		'boot_start': 0x1800,
+		'boot_sizes': [0x0100, 0x0200, 0x0400, 0x0800]
+	},
 	'atmega128': {
 		'page_size': 0x100,
 		'boot_start': 0x1e000,
