@@ -2,16 +2,13 @@ package ru.trolsoft.avrbootloader;
 
 
 import cz.jaybee.intelhex.*;
-import cz.jaybee.intelhex.listeners.RangeDetector;
 import ru.trolsoft.utils.files.DataBlock;
 import ru.trolsoft.utils.files.IntelHexReader;
 import ru.trolsoft.utils.files.IntelHexWriter;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 

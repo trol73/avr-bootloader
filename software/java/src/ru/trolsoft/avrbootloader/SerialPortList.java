@@ -168,8 +168,9 @@ public class SerialPortList {
                 PORTNAMES_PATH = "/dev/term/";
                 break;
             case 3:
+                // MacOS X
                 PORTNAMES_REGEXP = Pattern.compile("(tty|cu)\\..*");
-                PORTNAMES_PATH = "/dev/";
+                PORTNAMES_PATH = "/dev";
                 break;
             case 1:
                 PORTNAMES_REGEXP = Pattern.compile("");
