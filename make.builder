@@ -62,7 +62,7 @@ def error(msg):
 if not mcu in devices.keys():
 	error('Device is not supported: ' + mcu)
 
-if not 'UART_BAUD_RATE' in globals():
+if not 'UART_BAUD_RATE' in globals() and not 'UART_BAUD_RATE' in locals():
 	if frequency == 16e6:
 		UART_BAUD_RATE = 153600
 	elif frequency == 20e6:
@@ -71,6 +71,8 @@ if not 'UART_BAUD_RATE' in globals():
 		print frequency
 		error('UART_BAUD_RATE not defined')
 	print 'Baudrate not specified and set as', UART_BAUD_RATE
+else:
+	print 'Baudrate:', UART_BAUD_RATE	
 	
 dev = devices[mcu]
 size_is_supported = False
