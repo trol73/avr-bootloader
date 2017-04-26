@@ -2,11 +2,11 @@ name = 'avr-bootloader'
 
 # --------[Bootloader configuration]------------------------
 
-mcu = 'atmega328'
-#mcu = 'atmega128'
+#mcu = 'atmega328'
+mcu = 'atmega128'
 
-frequency = 20*1000000
-#frequency = 16*1000000
+#frequency = 20*1000000
+frequency = 16*1000000
 
 #UART_BAUD_RATE = 57600
 #UART_BAUD_RATE = 230400
@@ -21,9 +21,9 @@ ENABLE_READ_FUSELOCK=0
 
 # --------[Avrdude]-----------------------------------------
 
-port = ''
-baudrate = 1200
-programmer = 'arduino'
+#port = ''
+#baudrate = 1200
+#programmer = 'arduino'
 
 # ---------[Devices] ---------------------------------------
 
