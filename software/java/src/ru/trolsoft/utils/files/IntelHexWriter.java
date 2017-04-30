@@ -100,7 +100,7 @@ public class IntelHexWriter {
     }
 
     private static String hex(int b) {
-        return StrUtils.byteToHexStr(b);
+        return StrUtils.byteToHexStr((byte)b);
     }
 
     public void done() throws IOException {

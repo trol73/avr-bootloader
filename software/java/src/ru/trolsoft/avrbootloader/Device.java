@@ -6,6 +6,8 @@ import jssc.SerialPortTimeoutException;
 
 import java.util.Random;
 
+import static ru.trolsoft.avrbootloader.BootloaderListener.Operation.*;
+
 /**
  * Provide low-level interface to bootloader device and implement bootloader commands
  *
@@ -17,7 +19,7 @@ public class Device implements AutoCloseable, CommandCodes {
 
     private static final String SIGNATURE = "TSBL";
     private final SerialPort serialPort;
-
+    private  BootloaderListener listener;
 
     private Statistic statistic;
     private boolean connected;
@@ -28,6 +30,7 @@ public class Device implements AutoCloseable, CommandCodes {
      */
     public Device(SerialPort serialPort) {
         this.serialPort = serialPort;
+        this.connected = serialPort.isOpened();
     }
 
     /**
@@ -36,7 +39,66 @@ public class Device implements AutoCloseable, CommandCodes {
      */
     public Device(String portName) {
         serialPort = new SerialPort(portName);
+        notifyOperation(DISCONNECTED);
     }
+
+
+
+    public boolean initBootloader(int baudRate, int cmd[]) {
+        // send bootloader initialization command
+        boolean result = true;
+        try {
+            serialPort.openPort();
+            serialPort.setParams(baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+        } catch (SerialPortException e) {
+            e.printStackTrace();
+            result = false;
+        }
+
+//        for (int attempt = 0 ; attempt < attempts; attempt++) {
+//System.out.println("> " + attempt + " / " + attempts);
+        if (result) {
+            tryToReadAllData();
+            try {
+                writeBytes(cmd);
+                result = true;
+            } catch (DeviceException e) {
+                e.printStackTrace();
+            }
+        }
+//            if (result) {
+//                if (checkConnected()) {
+//                    result = true;
+//                    break;
+//                }
+//            }
+//        }
+        try {
+            serialPort.closePort();
+        } catch (SerialPortException e) {
+            e.printStackTrace();
+        }
+        connected = result;
+        return result;
+    }
+
+
+    public boolean checkConnected() {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            tryToReadAllData();
+            int v = attempt * 30 + 10;
+            try {
+                if (cmdSync(v) == v) {
+                    cmdAbout();
+                    return true;
+                }
+            } catch (DeviceException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
 
 
     /**
@@ -51,14 +113,18 @@ public class Device implements AutoCloseable, CommandCodes {
         } catch (SerialPortException e) {
             throw new DeviceException(e);
         }
-        // try to load all data (if exist)
-        while (true) {
-            try {
-                readByte(250);
-            } catch (SerialPortException e) {
-                break;
-            }
+        if (sync()) {
+            return true;
         }
+
+        close();
+        return false;
+    }
+
+    public boolean sync() {
+        notifyOperation(INIT);
+        tryToReadAllData();
+
         // synchronization
         int syncSuccess = 0;
         Random random = new Random();
@@ -68,6 +134,7 @@ public class Device implements AutoCloseable, CommandCodes {
                 if (cmdSync(rnd) == rnd) {
                     if (syncSuccess++ >= 10) {
                         connected = true;
+                        notifyOperation(CONNECTED);
                         return true;
                     }
                 }
@@ -75,9 +142,23 @@ public class Device implements AutoCloseable, CommandCodes {
         } catch (DeviceException e) {
             e.printStackTrace();
         }
-        close();
         return false;
     }
+
+    /**
+     * Try to load all data (if exist)
+     */
+    private void tryToReadAllData() {
+        while (true) {
+            try {
+                int v =readByte(250);
+System.out.println("try to read all " + v);
+            } catch (SerialPortException e) {
+                break;
+            }
+        }
+    }
+
 
     /**
      *
@@ -100,7 +181,9 @@ public class Device implements AutoCloseable, CommandCodes {
      */
     public int cmdSync(int val) throws DeviceException {
         writeBytes(CMD_SYNC, val);
-        return readByte();
+        int response = readByte();
+System.out.println("sync " + val + " -> " + response);
+        return response;
     }
 
 
@@ -133,13 +216,17 @@ public class Device implements AutoCloseable, CommandCodes {
      * @return byte array with read data
      * @throws DeviceException if any serial i/o or device error caused
      */
-    public byte[] cmdReadFlash(int addressIn16bytePages, int size16) throws DeviceException {
+    public byte[] cmdReadFlash(int addressIn16bytePages, int size16, ProgressListener progressListener) throws DeviceException {
+        notifyOperation(READ_FLASH);
         writeByte(CMD_READ_FLASH);
         writeWord(addressIn16bytePages);
         writeWord(size16);
         byte[] result = new byte[size16];
         for (int i = 0; i < size16; i++) {
             result[i] = (byte)readByte();
+            if (progressListener != null) {
+                progressListener.onProgress(100f*(i+1)/size16);
+            }
         }
         return result;
     }
@@ -152,6 +239,7 @@ public class Device implements AutoCloseable, CommandCodes {
      * @throws DeviceException if any serial i/o or device error caused
      */
     public byte[] cmdReadEeprom(int address, int size) throws DeviceException {
+        notifyOperation(READ_EEPROM);
         writeByte(CMD_READ_EEPROM);
         writeWord(address);
         writeWord(size);
@@ -170,6 +258,7 @@ public class Device implements AutoCloseable, CommandCodes {
      * @throws DeviceException if any serial i/o or device error caused
      */
     public Fuses cmdReadFuses() throws DeviceException {
+        notifyOperation(READ_FUSES);
         writeByte(CMD_READ_FUSES);
         int lo = readByte();
         int ex = readByte();
@@ -184,6 +273,7 @@ public class Device implements AutoCloseable, CommandCodes {
      */
     public void cmdStartApp() throws DeviceException {
         writeByte(CMD_START_APP);
+        notifyOperation(CLOSE);
     }
 
 
@@ -194,6 +284,7 @@ public class Device implements AutoCloseable, CommandCodes {
      * @throws DeviceException if any serial i/o or device error caused
      */
     public void cmdErasePage(int pageNumber) throws DeviceException {
+        notifyOperation(ERASE_FLASH);
         writeByte(CMD_ERASE_PAGE);
         writeWord(pageNumber);
         if (statistic != null) {
@@ -209,6 +300,7 @@ public class Device implements AutoCloseable, CommandCodes {
      * @throws DeviceException if any serial i/o or device error caused
      */
     public boolean cmdWriteFlashPage(int pageNumber) throws DeviceException {
+        notifyOperation(WRITE_FLASH);
         writeByte(CMD_WRITE_FLASH_PAGE);
         writeWord(pageNumber);
         if (statistic != null) {
@@ -227,6 +319,10 @@ public class Device implements AutoCloseable, CommandCodes {
         writeBytes(data);
     }
 
+    public boolean isConnected() {
+        return connected;
+    }
+
     /**
      * Set object to collect statistic
      * @return object to collect statistic
@@ -241,6 +337,10 @@ public class Device implements AutoCloseable, CommandCodes {
      */
     public void setStatistic(Statistic statistic) {
         this.statistic = statistic;
+    }
+
+    public void setListener(BootloaderListener listener) {
+        this.listener = listener;
     }
 
     private void writeWord(int word) throws DeviceException {
@@ -310,6 +410,7 @@ public class Device implements AutoCloseable, CommandCodes {
     }
 
     private void writeByte(int singleByte) throws DeviceException {
+//System.out.println("write > " + singleByte);
         try {
             long t = System.currentTimeMillis();
             serialPort.writeInt(singleByte);
@@ -319,6 +420,13 @@ public class Device implements AutoCloseable, CommandCodes {
             }
         } catch (SerialPortException e) {
             throw new DeviceException(e);
+        }
+    }
+
+
+    private void notifyOperation(BootloaderListener.Operation operation) {
+        if (listener != null) {
+            listener.onOperation(operation);
         }
     }
 
