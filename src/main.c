@@ -230,7 +230,8 @@ static void cmdReadFuses() {
 
 static void cmdEraseFlashPage() {
 	uint16_t page = uartWaitWord();
-	uint32_t address = page*PAGE_SIZE;
+	uint32_t address = page;
+	address *= PAGE_SIZE;
 	boot_page_erase(address);
 	//boot_spm_busy_wait();		// Wait until the memory is erased.
 }
@@ -239,9 +240,10 @@ volatile bool need_reenable_rww = false;
 
 static void cmdWriteFlashPage() {
 	uint16_t page  = uartWaitWord();
-	uint32_t address = page*PAGE_SIZE;
+	uint32_t address = page;
+	address *= PAGE_SIZE;
 	
-//	uint8_t sreg = SREG;
+	uint8_t sreg = SREG;
 
 	boot_spm_busy_wait();		// Wait until the memory is erased.
 	if (need_reenable_rww) {
@@ -262,9 +264,9 @@ static void cmdWriteFlashPage() {
 //	boot_spm_busy_wait();
 //	boot_rww_enable();		// Re-enable the RWW section
 	
-//	SREG = sreg;
+	SREG = sreg;	// TODO возможно, тут это не надо
 	
-	uartPutChar('0');
+	uartPutChar(0);
 }
 
 static void cmdReadPageData() {
