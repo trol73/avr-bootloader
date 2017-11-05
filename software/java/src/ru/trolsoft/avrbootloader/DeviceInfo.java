@@ -45,7 +45,7 @@ public class DeviceInfo {
 
     @Override
     public String toString() {
-        return "Device: signature=" + signature + " version=" + version + " bootloader_start=" + Integer.toHexString(bootloaderStart) + " bootloader_size = " +
-                Integer.toHexString(bootloaderSize) + " page_size=" + pageSize + " chip signature=" + Integer.toHexString(deviceSignature);
+        return "Device: signature=" + signature + " version=" + version + " bootloader_start=" + Integer.toHexString(bootloaderStart) + " bootloader_size = 0x" +
+                Integer.toHexString(bootloaderSize) + " page_size=" + pageSize + " chip signature=0x" + Integer.toHexString(deviceSignature);
     }
 }

@@ -3,6 +3,7 @@ package ru.trolsoft.avrbootloader;
 
 import cz.jaybee.intelhex.*;
 import jssc.SerialPort;
+import org.apache.commons.cli.*;
 import ru.trolsoft.utils.files.DataBlock;
 import ru.trolsoft.utils.files.IntelHexReader;
 import ru.trolsoft.utils.files.IntelHexWriter;
@@ -60,13 +61,14 @@ public class Bootloader {
      * @return
      * @throws DeviceException
      */
-    public byte[] readFlash(int offset, int size) throws DeviceException {
+    private byte[] readFlash(int offset, int size) throws DeviceException {
         byte[] result = new byte[size];
 
         int pos = 0;
         final int fullSize = size;
         float globalProgress = 0;
         while (size > 0) {
+//System.out.println("size " + size);
             int readSize = size <= 0xfff0 ? size : 0xfff0;
             final float blockProgress = 1f * readSize / fullSize;
             final float globalProgressFin = globalProgress;
@@ -137,6 +139,7 @@ System.out.println("writeFlash " + offset + " " + data.length);
         byte[] pageData = new byte[pageSize];
 //System.out.println("? " + data.length*1.0 / pageSize + "   " + readData.length*1.0 / pageSize);
         for (int page = firstPage; page < firstPage + pagesToWrite; page++) {
+            notifyProgress(100*(page-firstPage)/(pagesToWrite-firstPage));
             if (comparePages(firstPage*pageSize, data, readData, page)) {
                 skipCount++;
                 continue;
@@ -146,6 +149,7 @@ writeFlashPage(page, pageData);
 System.out.println("Write page "+ page);
             writeCount++;
         }
+        notifyProgress(100);
     }
 
     public void writeFlashFromFile(String fileName) throws IOException, IntelHexException, DeviceException {
@@ -158,6 +162,10 @@ System.out.println("Write page "+ page);
         }
     }
 
+    public Fuses readFuses() throws DeviceException {
+        return device.cmdReadFuses();
+    }
+
 
     public void setListener(BootloaderListener listener) {
         this.listener = listener;
@@ -165,10 +173,7 @@ System.out.println("Write page "+ page);
     }
 
     public boolean sync() {
-        if (device == null || !device.isConnected()) {
-            return false;
-        }
-        return device.sync();
+        return device != null && device.isConnected() && device.sync();
     }
 
 
@@ -214,7 +219,9 @@ System.out.println("Write page "+ page);
     }
 
     private void writeFlashPage(int pageNumber, byte[] data) throws DeviceException {
-System.out.println("write page " + pageNumber);
+System.out.println("write page " + pageNumber + " " + Integer.toHexString(data[0] & 0xff)
+        + " " + Integer.toHexString(data[1] & 0xff) + " " + Integer.toHexString(data[2] & 0xff)
+        + " " + Integer.toHexString(data[3] & 0xff));
         device.cmdTransferPage(data);
         device.cmdErasePage(pageNumber);
         device.cmdWriteFlashPage(pageNumber);
@@ -231,7 +238,7 @@ System.out.println("write page " + pageNumber);
 //
 //    }
 
-    private DeviceInfo getDeviceInfo() throws DeviceException {
+    public DeviceInfo getDeviceInfo() throws DeviceException {
         if (deviceInfo == null) {
             deviceInfo = device.cmdAbout();
         }
@@ -245,47 +252,74 @@ System.out.println("write page " + pageNumber);
     }
 
 
-    public static Device tryConnect(String portName, int deviceBaudRate, int bootloaderBaudRate, int[] initCmd,
-                                    int attempts, ProgressListener progressListener) {
+    public static Device tryConnect(String portName, int baudrate, int[] initCmd, int attempts, ProgressListener progressListener) {
+System.out.println("try " + baudrate);
         Device dev = new Device(portName);
         for (int attempt = 0; attempt < attempts; attempt++) {
-            boolean init = dev.initBootloader(deviceBaudRate, initCmd);
-System.out.println(" init " + init);
-            if (init) {
+            boolean init = dev.initBootloader(baudrate, initCmd);
+System.out.println("init " + init);
+            if (!init) {
                 try {
-                    dev.open(bootloaderBaudRate);
-                    if (dev.checkConnected()) {
-System.out.println("success");
-                        return dev;
-                    } else {
-                        dev.close();
-                    }
-                } catch (DeviceException ignore) {}
+                    dev.close();
+                } catch (DeviceException e) {
+//                    e.printStackTrace();
+                }
+                return null;
+            }
+            if (dev.sync()) {
+                return dev;
             }
         }
         try {
             dev.close();
         } catch (DeviceException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         return null;
     }
 
-    public static Device tryConnect(String portName, int deviceBaudRate, int bootloaderBaudRate, int[] initCmd, int attempts) {
-        return tryConnect(portName, deviceBaudRate, bootloaderBaudRate, initCmd, attempts, null);
+    public static Device tryConnect(String portName, int baudrate, int[] initCmd, int attempts) {
+        return tryConnect(portName, baudrate, initCmd, attempts, null);
     }
 
 
 
 
-        public static void main(String[] args) throws DeviceException, IOException, IntelHexException {
+    public static void main(String[] args) throws DeviceException, IOException, IntelHexException {
+//        Options options = buildCmdLineOptions();
+//
+//        CommandLineParser parser = new DefaultParser();
+//        HelpFormatter formatter = new HelpFormatter();
+//        CommandLine cmd;
+//        Integer baudrate;
+//        try {
+//            cmd = parser.parse(options, args);
+//            String portBaudrate = cmd.getOptionValue("bauds");
+//
+//        } catch (ParseException e) {
+//            System.out.println(e.getMessage());
+//            formatter.printHelp("bootloader", options);
+//            System.exit(1);
+//            return;
+//        }
+//
+//        String fileName = cmd.getOptionValue("file");
+//
+//
+//        String portName = cmd.getOptionValue("port");
+//        if (portName == null) {
+//            portName = detectPortName();
+//        }
+
         //Device dev = new Device("/dev/tty.wchusbserial14220");
         //dev.open(153600);
 
-        //Device dev = new Device("/dev/tty.wchusbserial14230");
+        Device dev = new Device("/dev/tty.wchusbserial14110");
         //dev.open(230400);
-        Device dev = tryConnect("/dev/tty.wchusbserial1410", 57600, 153600, new int[]{17, 13}, 10);
-        if (dev == null) {
+        dev.open(153600);
+        //Device dev = tryConnect("/dev/tty.wchusbserial1410", 57600, 153600, new int[]{17, 13}, 10);
+
+        if (!dev.isConnected()) {
             System.out.println("Can't connect");
             return;
         }
@@ -329,12 +363,17 @@ System.out.println(operation);
                 }
             }
         });
+
 //        bootloader.readFlashToFile(false, "/Users/trol/Projects/radio/avr-bootloader/read_firmware.hex");
         bootloader.readFlashToFile(true, "/Users/trol/read_firmware_with_loader.hex");
         //bootloader.writeFlashFromFile("/Users/trol/Projects/radio/avr-lcd-module-128x128/build/avr-lcd-module-128x128.hex");
 //        bootloader.writeFlashFromFile("/Users/trol/Projects/avr/avr-ic-tester-v2/firmware/tester/build/ic-tester-main.hex");
 
 
-        bootloader.device.cmdStartApp();
+        bootloader.startApp();
+    }
+
+    private static String detectPortName() {
+        return null;
     }
 }

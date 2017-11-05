@@ -9,7 +9,7 @@ public class DataBlock {
     private final int address;
     private final byte[] data;
 
-    public DataBlock(int address, byte[] data) {
+    DataBlock(int address, byte[] data) {
         this.address = address;
         this.data = data;
     }

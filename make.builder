@@ -8,6 +8,9 @@ mcu = 'atmega128'
 #frequency = 20*1000000
 frequency = 16*1000000
 
+# CH340 supports common baud rates: 50, 75, 100, 110, 134.5, 150, 300, 600, 900, 1200, 1800, 2400, 3600, 4800, 9600, 14400, 19200, 28800, 33600, 38400, 56000, 57600, 76800, 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 baud. 
+
+
 #UART_BAUD_RATE = 57600
 #UART_BAUD_RATE = 230400
 #UART_BAUD_RATE = 153600
@@ -15,10 +18,11 @@ frequency = 16*1000000
 USE_SECOND_UART = 0
 
 BOOTLOADER_SIZE = 0x0400
+UART_DOUBLE_SPEED=1
 
 READ_PROTECT_BOOTLOADER=0
 ENABLE_READ_FUSELOCK=0
-
+ENABLE_PROXY=0
 # --------[Avrdude]-----------------------------------------
 
 #port = ''
@@ -72,8 +76,8 @@ if not 'UART_BAUD_RATE' in globals() and not 'UART_BAUD_RATE' in locals():
 		error('UART_BAUD_RATE not defined')
 	print 'Baudrate not specified and set as', UART_BAUD_RATE
 else:
-	print 'Baudrate:', UART_BAUD_RATE	
-	
+	print 'Baudrate:', UART_BAUD_RATE
+
 dev = devices[mcu]
 size_is_supported = False
 for bs in dev['boot_sizes']:
@@ -86,7 +90,7 @@ bootstart = dev['boot_start'] + dev['boot_sizes'][len(dev['boot_sizes'])-1] - BO
 print 'Bootloader start:', hex(bootstart)
 print 'Bootloader size:',  BOOTLOADER_SIZE, 'bytes'
 print
-	
+
 defines = [
    'UART_RX_BUFFER_SIZE=256',
    'UART_TX_BUFFER_SIZE=64',
@@ -97,6 +101,8 @@ defines = [
    'BOOTLOADER_SIZE=' + str(BOOTLOADER_SIZE),
    'READ_PROTECT_BOOTLOADER=' + str(READ_PROTECT_BOOTLOADER),
    'ENABLE_READ_FUSELOCK=' + str(ENABLE_READ_FUSELOCK),
+   'ENABLE_PROXY=' + str(ENABLE_PROXY),
+   'UART_DOUBLE_SPEED=' + str(UART_DOUBLE_SPEED),
    'DEBUG=0'
 ]
 

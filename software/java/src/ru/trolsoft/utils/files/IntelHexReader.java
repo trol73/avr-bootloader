@@ -45,7 +45,7 @@ public class IntelHexReader {
         List<DataBlock> result = new ArrayList<>();
         for (int ri = 0; ri < regions.size(); ri++) {
             Region region = regions.get(ri);
-            System.out.println(region);
+            System.out.println("Region[" + ri + "] - "  + region);
             int address = region.getAddressStart();
             int size = region.getLength();
             byte[] data = new byte[size];

@@ -4,6 +4,7 @@ import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortTimeoutException;
 
+import javax.swing.*;
 import java.util.Random;
 
 import static ru.trolsoft.avrbootloader.BootloaderListener.Operation.*;
@@ -51,53 +52,43 @@ public class Device implements AutoCloseable, CommandCodes {
             serialPort.openPort();
             serialPort.setParams(baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
         } catch (SerialPortException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             result = false;
         }
 
-//        for (int attempt = 0 ; attempt < attempts; attempt++) {
-//System.out.println("> " + attempt + " / " + attempts);
         if (result) {
             tryToReadAllData();
-            try {
-                writeBytes(cmd);
+            if (cmd != null) {
+                try {
+                    writeBytes(cmd);
+                    result = true;
+                } catch (DeviceException e) {
+//                    e.printStackTrace();
+                }
+            } else {
                 result = true;
-            } catch (DeviceException e) {
-                e.printStackTrace();
             }
-        }
-//            if (result) {
-//                if (checkConnected()) {
-//                    result = true;
-//                    break;
-//                }
-//            }
-//        }
-        try {
-            serialPort.closePort();
-        } catch (SerialPortException e) {
-            e.printStackTrace();
         }
         connected = result;
         return result;
     }
 
 
-    public boolean checkConnected() {
-        for (int attempt = 0; attempt < 5; attempt++) {
-            tryToReadAllData();
-            int v = attempt * 30 + 10;
-            try {
-                if (cmdSync(v) == v) {
-                    cmdAbout();
-                    return true;
-                }
-            } catch (DeviceException e) {
-                e.printStackTrace();
-            }
-        }
-        return false;
-    }
+//    public boolean checkConnected() {
+//        for (int attempt = 0; attempt < 5; attempt++) {
+//            tryToReadAllData();
+//            int v = attempt * 30 + 10;
+//            try {
+//                if (cmdSync(v) == v) {
+//                    cmdAbout();
+//                    return true;
+//                }
+//            } catch (DeviceException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        return false;
+//    }
 
 
 
@@ -125,18 +116,24 @@ public class Device implements AutoCloseable, CommandCodes {
         notifyOperation(INIT);
         tryToReadAllData();
 
-        // synchronization
         int syncSuccess = 0;
         Random random = new Random();
         try {
-            for (int i = 0; i < 512; i++) {
-                int rnd = Math.abs(random.nextInt()) & 0xff;
-                if (cmdSync(rnd) == rnd) {
-                    if (syncSuccess++ >= 10) {
-                        connected = true;
-                        notifyOperation(CONNECTED);
-                        return true;
+            for (int i = 0; i < 30; i++) {
+                int rnd = syncSuccess == 0 ? 0 : Math.abs(random.nextInt()) & 0xff;
+                System.out.println("try to sync " + rnd);
+                try {
+                    if (cmdSync(rnd) == rnd) {
+                        if (syncSuccess++ >= 3) {
+                            connected = true;
+                            notifyOperation(CONNECTED);
+                            return true;
+                        }
+                    } else {
+                        syncSuccess = 0;
                     }
+                } catch (SerialPortException e) {
+                    syncSuccess = 0;
                 }
             }
         } catch (DeviceException e) {
@@ -151,7 +148,7 @@ public class Device implements AutoCloseable, CommandCodes {
     private void tryToReadAllData() {
         while (true) {
             try {
-                int v =readByte(250);
+                int v = readByte(250);
 System.out.println("try to read all " + v);
             } catch (SerialPortException e) {
                 break;
@@ -165,6 +162,7 @@ System.out.println("try to read all " + v);
      * @throws DeviceException if any serial i/o or device error caused
      */
     public void close() throws DeviceException {
+        connected = false;
         try {
             serialPort.closePort();
         } catch (SerialPortException e) {
@@ -179,10 +177,10 @@ System.out.println("try to read all " + v);
      * @return received value
      * @throws DeviceException if any serial i/o or device error caused
      */
-    public int cmdSync(int val) throws DeviceException {
+    public int cmdSync(int val) throws DeviceException, SerialPortException {
         writeBytes(CMD_SYNC, val);
-        int response = readByte();
-System.out.println("sync " + val + " -> " + response);
+        int response = readByte(100);
+        System.out.println("sync " + val + " -> " + response);
         return response;
     }
 
@@ -224,6 +222,7 @@ System.out.println("sync " + val + " -> " + response);
         byte[] result = new byte[size16];
         for (int i = 0; i < size16; i++) {
             result[i] = (byte)readByte();
+//System.out.println("read byte #" +  i + " " + Integer.toHexString(result[i] & 0xff));
             if (progressListener != null) {
                 progressListener.onProgress(100f*(i+1)/size16);
             }
@@ -260,9 +259,9 @@ System.out.println("sync " + val + " -> " + response);
     public Fuses cmdReadFuses() throws DeviceException {
         notifyOperation(READ_FUSES);
         writeByte(CMD_READ_FUSES);
-        int lo = readByte();
-        int ex = readByte();
-        int hi = readByte();
+        int lo = readByte() & 0xff;
+        int ex = readByte() & 0xff;
+        int hi = readByte() & 0xff;
         return new Fuses(lo, ex, hi);
     }
 
@@ -348,16 +347,18 @@ System.out.println("sync " + val + " -> " + response);
         writeByte(word & 0xff);
     }
 
-    private void writeBytes(int... vals) throws DeviceException {
+    protected void writeBytes(int... vals) throws DeviceException {
         for (int v : vals) {
             writeByte(v);
         }
     }
 
     private void writeBytes(byte... vals) throws DeviceException {
-        for (int v : vals) {
-            writeByte(v);
+        int ints[] = new int[vals.length];
+        for (int i = 0; i < vals.length; i++) {
+            ints[i] = vals[i];
         }
+        writeBytes(ints);
     }
 
     private int readByte() throws DeviceException {
@@ -389,7 +390,7 @@ System.out.println("sync " + val + " -> " + response);
     }
 
 
-    private int readByte(int timeout) throws SerialPortException {
+    protected int readByte(int timeout) throws SerialPortException {
         long t = System.currentTimeMillis();
         try {
             int[] buf = serialPort.readIntArray(1, timeout);
@@ -398,6 +399,7 @@ System.out.println("sync " + val + " -> " + response);
                 statistic.uartReceiveCount++;
                 statistic.uartReceiveTime += t;
             }
+//System.out.println("<< 0x" + Integer.toHexString(buf[0]));
             return buf[0];
         } catch (SerialPortTimeoutException e) {
             t = System.currentTimeMillis() - t;
@@ -409,7 +411,7 @@ System.out.println("sync " + val + " -> " + response);
         }
     }
 
-    private void writeByte(int singleByte) throws DeviceException {
+    protected void writeByte(int singleByte) throws DeviceException {
 //System.out.println("write > " + singleByte);
         try {
             long t = System.currentTimeMillis();
@@ -425,6 +427,7 @@ System.out.println("sync " + val + " -> " + response);
 
 
     private void notifyOperation(BootloaderListener.Operation operation) {
+System.out.println(operation);
         if (listener != null) {
             listener.onOperation(operation);
         }

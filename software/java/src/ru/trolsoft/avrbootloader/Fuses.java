@@ -26,4 +26,8 @@ public class Fuses {
         return high;
     }
 
+    @Override
+    public String toString() {
+        return "Fuses {high = 0x" + Integer.toHexString(high) + ", low = 0x" + Integer.toHexString(low) + ", ext = 0x" + Integer.toHexString(extended) + "}";
+    }
 }
