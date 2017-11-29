@@ -22,22 +22,22 @@ void uartInit(unsigned int baudrate) {
 		 // Set baud rate
 		 if (baudrate & 0x8000) {
 			  #if UART1_BIT_U2X
-			UART1_STATUS = (1<<UART1_BIT_U2X);  //Enable 2x speed 
+			UART1_STATUS = (1<<UART1_BIT_U2X);  //Enable 2x speed
 			  #endif
 		 }
 		 UART1_UBRRH = (unsigned char)((baudrate >> 8) & 0x80);
 		 UART1_UBRRL = (unsigned char) baudrate;
 
 		 // Enable USART receiver and transmitter
-		 UART1_CONTROL = _BV(UART1_BIT_RXCIE)|_BV(UART1_BIT_RXEN)|_BV(UART1_BIT_TXEN);    
+		 UART1_CONTROL = _BV(UART1_BIT_RXCIE)|_BV(UART1_BIT_RXEN)|_BV(UART1_BIT_TXEN);
 
 		 // Set frame format: asynchronous, 8data, no parity, 1stop bit
 		 #ifdef UART1_BIT_URSEL
 		 UART1_CONTROLC = _BV(UART1_BIT_URSEL) | _BV(UART1_BIT_UCSZ1) | _BV(UART1_BIT_UCSZ0);
 		 #else
 		 UART1_CONTROLC = _BV(UART1_BIT_UCSZ1)|_BV(UART1_BIT_UCSZ0);
-		 #endif     
-	
+		 #endif
+
 #else
 
 	#ifdef UART_TEST
@@ -60,16 +60,16 @@ void uartInit(unsigned int baudrate) {
 		 // Set baud rate
 		 if (baudrate & 0x8000) {
 			  #if UART0_BIT_U2X
-			  UART0_STATUS = _BV(UART0_BIT_U2X);  // Enable 2x speed 
+			  UART0_STATUS = _BV(UART0_BIT_U2X);  // Enable 2x speed
 			  #endif
 		 } else {
 			 #if UART0_BIT_U2X
-			 UART0_STATUS &= ~_BV(UART0_BIT_U2X);	// Disable 2x speed 
+			 UART0_STATUS &= ~_BV(UART0_BIT_U2X);	// Disable 2x speed
 			 #endif
 		 }
 		 #if defined(UART0_UBRRH)
 		 UART0_UBRRH = (unsigned char)((baudrate>>8)&0x80) ;
-		 #endif    
+		 #endif
 		 UART0_UBRRL = (unsigned char) (baudrate & 0x00FF);
 
 		 // Enable USART receiver and transmitter
@@ -81,7 +81,7 @@ void uartInit(unsigned int baudrate) {
 		 UART0_CONTROLC = _BV(UART0_BIT_URSEL)|_BV(UART0_BIT_UCSZ1)|_BV(UART0_BIT_UCSZ0);
 		 #else
 		 UART0_CONTROLC = _BV(UART0_BIT_UCSZ1)|_BV(UART0_BIT_UCSZ0);
-		 #endif 
+		 #endif
 		 #endif
 #endif
 }
@@ -89,12 +89,23 @@ void uartInit(unsigned int baudrate) {
 
 
 void uartPutChar(uint8_t data) {
-	while (!(UART_STATUS & (1<<UART_TXREADY)));
+	while (!(UART_STATUS & _BV(UART_TXREADY)));
 	UART_DATA = data;
 }
 
 uint8_t uartWaitChar() {
-	while (!(UART_STATUS & (1<<UART_RXREADY)));
+	while (!(UART_STATUS & _BV(UART_RXREADY)));
 	return UART_DATA;
 }
 
+#if ENABLE_PROXY
+void proxyUartPutChar(uint8_t data) {
+	while (!(UART_STATUS & _BV(UART_TXREADY)));
+	UART_DATA = data;
+}
+
+uint8_t proxyUartWaitChar() {
+	while (!(UART_STATUS & _BV(UART_RXREADY)));
+	return UART_DATA;
+}
+#endif

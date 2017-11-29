@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   uart.h
  * Author: trol
  *
@@ -15,16 +15,20 @@
 void uartInit(unsigned int baudrate);
 void uartPutChar(uint8_t data);
 uint8_t uartWaitChar();
+#if ENABLE_PROXY
+void proxyUartPutChar(uint8_t data);
+uint8_t proxyUartWaitChar();
+#endif
 
 /** @brief  UART Baudrate Expression
- *  @param  xtalCpu  system clock in Mhz, e.g. 4000000UL for 4Mhz          
- *  @param  baudRate baudrate in bps, e.g. 1200, 2400, 9600     
+ *  @param  xtalCpu  system clock in Mhz, e.g. 4000000UL for 4Mhz
+ *  @param  baudRate baudrate in bps, e.g. 1200, 2400, 9600
  */
 #define UART_BAUD_SELECT(baudRate,xtalCpu)  (((xtalCpu) + 8UL * (baudRate)) / (16UL * (baudRate)) -1UL)
 
 /** @brief  UART Baudrate Expression for ATmega double speed mode
- *  @param  xtalCpu  system clock in Mhz, e.g. 4000000UL for 4Mhz           
- *  @param  baudRate baudrate in bps, e.g. 1200, 2400, 9600     
+ *  @param  xtalCpu  system clock in Mhz, e.g. 4000000UL for 4Mhz
+ *  @param  baudRate baudrate in bps, e.g. 1200, 2400, 9600
  */
 #define UART_BAUD_SELECT_DOUBLE_SPEED(baudRate,xtalCpu) ( ((((xtalCpu) + 4UL * (baudRate)) / (8UL * (baudRate)) -1UL)) | 0x8000)
 
@@ -34,11 +38,11 @@ uint8_t uartWaitChar();
     defined(__AVR_AT90S4434__) || defined(__AVR_AT90S8535__) || \
     defined(__AVR_ATmega103__)
  // old AVR classic or ATmega103 with one UART
- #define UART0_RECEIVE_INTERRUPT   UART_RX_vect 
+ #define UART0_RECEIVE_INTERRUPT   UART_RX_vect
  #define UART0_TRANSMIT_INTERRUPT  UART_UDRE_vect
  #define UART0_STATUS      USR
  #define UART0_CONTROL     UCR
- #define UART0_DATA        UDR  
+ #define UART0_DATA        UDR
  #define UART0_UDRIE       UDRIE
  #define UART0_UBRRL       UBRR
  #define UART0_BIT_U2X     U2X
@@ -49,11 +53,11 @@ uint8_t uartWaitChar();
  #define UART0_RXREADY     RXC
 #elif defined(__AVR_AT90S2333__) || defined(__AVR_AT90S4433__)
  // old AVR classic with one UART
- #define UART0_RECEIVE_INTERRUPT   UART_RX_vect 
+ #define UART0_RECEIVE_INTERRUPT   UART_RX_vect
  #define UART0_TRANSMIT_INTERRUPT  UART_UDRE_vect
  #define UART0_STATUS      UCSRA
  #define UART0_CONTROL     UCSRB
- #define UART0_DATA        UDR 
+ #define UART0_DATA        UDR
  #define UART0_UDRIE       UDRIE
  #define UART0_UBRRL       UBRR
  #define UART0_BIT_U2X     U2X
@@ -62,7 +66,7 @@ uint8_t uartWaitChar();
  #define UART0_BIT_TXEN    TXEN
  #define UART0_TXREADY	   UDRE
  #define UART0_RXREADY     RXC
-#elif defined(__AVR_AT90PWM216__) || defined(__AVR_AT90PWM316__) 
+#elif defined(__AVR_AT90PWM216__) || defined(__AVR_AT90PWM316__)
  // AT90PWN216/316 with one USART
  #define UART0_RECEIVE_INTERRUPT   USART_RX_vect
  #define UART0_TRANSMIT_INTERRUPT  USART_UDRE_vect
@@ -78,7 +82,7 @@ uint8_t uartWaitChar();
  #define UART0_BIT_RXEN    RXEN
  #define UART0_BIT_TXEN    TXEN
  #define UART0_BIT_UCSZ0   UCSZ0
- #define UART0_BIT_UCSZ1   UCSZ1 
+ #define UART0_BIT_UCSZ1   UCSZ1
  #define UART0_TXREADY	   UDRE
  #define UART0_RXREADY      RXC
 #elif defined(__AVR_ATmega8__) || defined(__AVR_ATmega8A__) || \
@@ -109,7 +113,7 @@ uint8_t uartWaitChar();
  #define UART0_TRANSMIT_INTERRUPT  USART_UDRE_vect
  #define UART0_STATUS      UCSRA
  #define UART0_CONTROL     UCSRB
- #define UART0_CONTROLC    UCSRC 
+ #define UART0_CONTROLC    UCSRC
  #define UART0_DATA        UDR
  #define UART0_UDRIE       UDRIE
  #define UART0_UBRRL       UBRRL
@@ -139,7 +143,7 @@ uint8_t uartWaitChar();
  #define UART0_BIT_TXEN    TXEN
  #define UART0_TXREADY	   UDRE
  #define UART0_RXREADY     RXC
-#elif defined(__AVR_ATmega162__) 
+#elif defined(__AVR_ATmega162__)
  // ATmega with two USART
  #define ATMEGA_USART1
  #define UART0_RECEIVE_INTERRUPT   USART0_RXC_vect
@@ -176,7 +180,7 @@ uint8_t uartWaitChar();
  #define UART1_BIT_RXEN    RXEN1
  #define UART1_BIT_TXEN    TXEN1
  #define UART1_BIT_UCSZ0   UCSZ10
- #define UART1_BIT_UCSZ1   UCSZ11 
+ #define UART1_BIT_UCSZ1   UCSZ11
  #define UART1_TXREADY	   UDRE1
  #define UART1_RXREADY     RXC1
 
@@ -286,7 +290,7 @@ uint8_t uartWaitChar();
  #define UART1_TRANSMIT_INTERRUPT  USART1_UDRE_vect
  #define UART0_STATUS      UCSR0A
  #define UART0_CONTROL     UCSR0B
- #define UART0_CONTROLC    UCSR0C  
+ #define UART0_CONTROLC    UCSR0C
  #define UART0_DATA        UDR0
  #define UART0_UDRIE       UDRIE0
  #define UART0_UBRRL       UBRR0L
@@ -296,13 +300,13 @@ uint8_t uartWaitChar();
  #define UART0_BIT_RXEN    RXEN0
  #define UART0_BIT_TXEN    TXEN0
  #define UART0_BIT_UCSZ0   UCSZ00
- #define UART0_BIT_UCSZ1   UCSZ01 
+ #define UART0_BIT_UCSZ1   UCSZ01
  #define UART0_TXREADY     UDRE0
  #define UART0_RXREADY     RXC0
 
  #define UART1_STATUS      UCSR1A
  #define UART1_CONTROL     UCSR1B
- #define UART1_CONTROLC    UCSR1C  
+ #define UART1_CONTROLC    UCSR1C
  #define UART1_DATA        UDR1
  #define UART1_UDRIE       UDRIE1
  #define UART1_UBRRL       UBRR1L
@@ -351,7 +355,7 @@ uint8_t uartWaitChar();
  #define UART_DATA		UART1_DATA
 
 #else
- 
+
  #define UART_STATUS	UART0_STATUS
  #define UART_TXREADY	UART0_TXREADY
  #define UART_RXREADY	UART0_RXREADY
