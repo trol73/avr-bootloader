@@ -141,7 +141,7 @@ class DataFile:
                     linear_mode = False
                     if address != 0:
                         print filename, 'invalid offset (not zero) at line', line+1
-                    base_address + strutils.hex2word(s[pos:pos+4])
+                    base_address = strutils.hex2word(s[pos:pos+4]) * 16
                     pos += 4
                 elif s_type == 3:
                     pass

@@ -1,7 +1,6 @@
 package ru.trolsoft.avrbootloader;
 
 import cz.jaybee.intelhex.IntelHexException;
-import jssc.SerialNativeInterface;
 import org.apache.commons.cli.*;
 
 import java.io.File;
@@ -52,7 +51,7 @@ public class ConsoleUtil {
             }
         }
         if (portName == null) {
-            portName = selectPortName();
+//            portName = selectPortName();
             System.out.println("Serial port: " + portName);
         }
 
@@ -185,48 +184,48 @@ System.out.println("baudrate " + baudrate);
         return null;
     }
 
-    private String selectSerialPort(String[] ports) {
-        List<String> suitable = new ArrayList<>();
-        for (String port : ports) {
-            if (SerialNativeInterface.getOsType() == SerialNativeInterface.OS_MAC_OS_X) {
-                if (port.contains("cu.wchusbserial")) {
-                    suitable.add(port);
-                    continue;
-                }
-            }
-        }
+//    private String selectSerialPort(String[] ports) {
+//        List<String> suitable = new ArrayList<>();
+//        for (String port : ports) {
+//            if (SerialNativeInterface.getOsType() == SerialNativeInterface.OS_MAC_OS_X) {
+//                if (port.contains("cu.wchusbserial")) {
+//                    suitable.add(port);
+//                    continue;
+//                }
+//            }
+//        }
+//
+//        return suitable.size() == 1 ? suitable.get(0) : null;
+//    }
 
-        return suitable.size() == 1 ? suitable.get(0) : null;
-    }
 
-
-    private String selectPortName() {
-        String ports[] = SerialPortList.getPortNames();
-        if (ports.length == 0) {
-            System.err.println("Serial port doesn't defined");
-            System.exit(1);
-        }
-        String defaultPort = selectSerialPort(ports);
-        if (defaultPort != null) {
-            return defaultPort;
-        }
-        System.out.println("Select serial port:");
-        int i = 1;
-        for (String s : ports) {
-            System.out.println("\t[" +i + "]\t" + s);
-            i++;
-        }
-        Scanner reader = new Scanner(System.in);
-        System.out.print("Select port (1.." + ports.length + "): ");
-        try {
-            return ports[reader.nextInt()-1];
-        } catch (Exception e) {
-            System.out.println("Wrong choice");
-            System.exit(1);
-            return null;
-        }
-
-    }
+//    private String selectPortName() {
+//        String ports[] = SerialPortList.getPortNames();
+//        if (ports.length == 0) {
+//            System.err.println("Serial port doesn't defined");
+//            System.exit(1);
+//        }
+//        String defaultPort = selectSerialPort(ports);
+//        if (defaultPort != null) {
+//            return defaultPort;
+//        }
+//        System.out.println("Select serial port:");
+//        int i = 1;
+//        for (String s : ports) {
+//            System.out.println("\t[" +i + "]\t" + s);
+//            i++;
+//        }
+//        Scanner reader = new Scanner(System.in);
+//        System.out.print("Select port (1.." + ports.length + "): ");
+//        try {
+//            return ports[reader.nextInt()-1];
+//        } catch (Exception e) {
+//            System.out.println("Wrong choice");
+//            System.exit(1);
+//            return null;
+//        }
+//
+//    }
 
 
 }

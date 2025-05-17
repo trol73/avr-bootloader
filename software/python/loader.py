@@ -152,7 +152,8 @@ class Loader:
         self.bootloader_start = about['bootloader_start']
         self.firmware_pages = self.bootloader_start / self.page_size
         print 'page sizes', self.page_size
-        print 'pages', self.firmware_pages
+        print 'pages', self.firmware_pages, 'total', self.page_size*self.firmware_pages, 'bytes'
+        print 'bootloader size', self.bootloader_size
 
     def read_all_flash(self, with_loader):
         start = time.time()
@@ -255,7 +256,7 @@ def print_dump(lst):
             s = ''
 
 #fw = DataFile('/Users/trol/Projects/radio/avr-lcd-module-128x128/build/avr-lcd-module-128x128.hex')
-fw = DataFile('/Users/trol/Projects/radio/avr-ic-tester-v2/firmware/tester/build/ic-tester-main.hex')
+#fw = DataFile('/Users/trol/Projects/radio/avr-ic-tester-v2/firmware/tester/build/ic-tester-main.hex')
 
 
 # read 230400       44.0383300884 us/byte
@@ -263,15 +264,17 @@ fw = DataFile('/Users/trol/Projects/radio/avr-ic-tester-v2/firmware/tester/build
 #                   255.434597666 us/byte
 #l = Loader('/dev/tty.wchusbserial14230', 57600)
 #l = Loader('/dev/tty.wchusbserial14230', 230400)
-l = Loader('/dev/tty.wchusbserial14220', 153600)
+#l = Loader('/dev/tty.wchusbserial14220', 153600)
+l = Loader('/dev/tty.wchusbserial14110', 153600)
 print l.dev.get_about()
 
 
 l.read_and_save_flash('flash_with_loader.hex', True)
 l.read_and_save_flash('flash_without_loader.hex', False)
+1/0
 l.write_flash(fw.data)
 l.dev.start_app()
-1/0
+
 
 # df = DataFile([])
 #

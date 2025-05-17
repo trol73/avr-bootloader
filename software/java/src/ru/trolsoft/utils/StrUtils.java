@@ -17,8 +17,6 @@
  */
 package ru.trolsoft.utils;
 
-import javax.xml.bind.DatatypeConverter;
-
 /**
  * @author Oleg Trifonov
  * Created on 03/04/14.
@@ -160,7 +158,13 @@ public class StrUtils {
         if (text.length() % 2 == 1) {
             text = text.substring(0, text.length() - 1) + "0" + text.charAt(text.length() - 1);
         }
-        return DatatypeConverter.parseHexBinary(text);
+        //return DatatypeConverter.parseHexBinary(text);
+        byte[] data = new byte[text.length() / 2];
+        for (int i = 0; i < text.length(); i += 2) {
+            data[i / 2] = (byte) ((Character.digit(text.charAt(i), 16) << 4)
+                + Character.digit(text.charAt(i+1), 16));
+        }
+        return data;
     }
 
 

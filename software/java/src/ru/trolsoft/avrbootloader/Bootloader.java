@@ -2,8 +2,6 @@ package ru.trolsoft.avrbootloader;
 
 
 import cz.jaybee.intelhex.*;
-import jssc.SerialPort;
-import org.apache.commons.cli.*;
 import ru.trolsoft.utils.files.DataBlock;
 import ru.trolsoft.utils.files.IntelHexReader;
 import ru.trolsoft.utils.files.IntelHexWriter;
@@ -11,6 +9,7 @@ import ru.trolsoft.utils.files.IntelHexWriter;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,10 +33,10 @@ public class Bootloader {
         this.device = new Device(port);
     }
 
-    public Bootloader(String port, int baudrate) throws DeviceException {
-        this.device = new Device(port);
-        device.open(baudrate);
-    }
+//    public Bootloader(String port, int baudrate) throws DeviceException {
+//        this.device = new Device(port);
+//        device.open(baudrate);
+//    }
 
     /**
      *
@@ -162,6 +161,15 @@ System.out.println("Write page "+ page);
         }
     }
 
+    public void writeFlashFromStream(InputStream is) throws IOException, IntelHexException, DeviceException {
+        List<DataBlock> blocks = new IntelHexReader(is).read();
+        //System.out.println(blocks);
+        for (DataBlock data : blocks) {
+            writeFlash(data.getAddress(), data.getData());
+        }
+        is.close();
+    }
+
     public Fuses readFuses() throws DeviceException {
         return device.cmdReadFuses();
     }
@@ -254,7 +262,7 @@ System.out.println("write page " + pageNumber + " " + Integer.toHexString(data[0
 
     public static Device tryConnect(String portName, int baudrate, int[] initCmd, int attempts, ProgressListener progressListener) {
 System.out.println("try " + baudrate);
-        Device dev = new Device(portName);
+        Device dev = null;//new Device(portName);
         for (int attempt = 0; attempt < attempts; attempt++) {
             boolean init = dev.initBootloader(baudrate, initCmd);
 System.out.println("init " + init);
@@ -314,15 +322,15 @@ System.out.println("init " + init);
         //Device dev = new Device("/dev/tty.wchusbserial14220");
         //dev.open(153600);
 
-        Device dev = new Device("/dev/tty.wchusbserial14110");
-        //dev.open(230400);
-        dev.open(153600);
-        //Device dev = tryConnect("/dev/tty.wchusbserial1410", 57600, 153600, new int[]{17, 13}, 10);
-
-        if (!dev.isConnected()) {
-            System.out.println("Can't connect");
-            return;
-        }
+//        Device dev = new Device("/dev/tty.wchusbserial14110");
+//        //dev.open(230400);
+//        dev.open(153600);
+//        //Device dev = tryConnect("/dev/tty.wchusbserial1410", 57600, 153600, new int[]{17, 13}, 10);
+//
+//        if (!dev.isConnected()) {
+//            System.out.println("Can't connect");
+//            return;
+//        }
 //        Device dev = new Device("/dev/tty.wchusbserial1410");
 //
 //        for (int attempt = 0; attempt < 10; attempt++) {
@@ -347,30 +355,30 @@ System.out.println("init " + init);
         // 57600, 76800, 153600
 //        dev.open(153600);
 
-        Bootloader bootloader = new Bootloader(dev);
-        bootloader.setListener(new BootloaderListener() {
-            float last = -100f;
-            @Override
-            public void onOperation(Operation operation) {
-System.out.println(operation);
-            }
-
-            @Override
-            public void onProgress(float progress) {
-                if (progress - last > 2.5) {
-                    System.out.println("Progress: " + progress);
-                    last = progress;
-                }
-            }
-        });
+//        Bootloader bootloader = new Bootloader(dev);
+//        bootloader.setListener(new BootloaderListener() {
+//            float last = -100f;
+//            @Override
+//            public void onOperation(Operation operation) {
+//System.out.println(operation);
+//            }
+//
+//            @Override
+//            public void onProgress(float progress) {
+//                if (progress - last > 2.5) {
+//                    System.out.println("Progress: " + progress);
+//                    last = progress;
+//                }
+//            }
+//        });
 
 //        bootloader.readFlashToFile(false, "/Users/trol/Projects/radio/avr-bootloader/read_firmware.hex");
-        bootloader.readFlashToFile(true, "/Users/trol/read_firmware_with_loader.hex");
+//        bootloader.readFlashToFile(true, "/Users/trol/read_firmware_with_loader.hex");
         //bootloader.writeFlashFromFile("/Users/trol/Projects/radio/avr-lcd-module-128x128/build/avr-lcd-module-128x128.hex");
 //        bootloader.writeFlashFromFile("/Users/trol/Projects/avr/avr-ic-tester-v2/firmware/tester/build/ic-tester-main.hex");
 
 
-        bootloader.startApp();
+//        bootloader.startApp();
     }
 
     private static String detectPortName() {
